@@ -21,7 +21,7 @@ import WhiteLogo from "@/assets/logos/logoWhiteFilled.svg";
 import Rank from "@/assets/ranks/ZENITH_DOOMSCROLLER_2.svg";
 const sparkleImage = require("@/assets/images/sparkle.png");
 import EnterScreentime from "@/assets/images/BUTTON_ENTERSCREENTIME.svg";
-
+import Confirm from "@/assets/images/confirm.svg";
 export default function Index() {
   const router = useRouter();
   const [screenTime, setScreenTime] = useState("3h 14m");
@@ -147,47 +147,41 @@ export default function Index() {
     keyboardType="numeric"
   />
 </View>
+<Pressable
+  onPress={() => {
+    let hours = parseInt(hoursInput) || 0;
+    let minutes = parseInt(minutesInput) || 0;
 
-      <ShadowPillButton
-        onPress={() => {
-            let hours = parseInt(hoursInput) || 0;
-            let minutes = parseInt(minutesInput) || 0;
-        
-            if (hours === 0 && minutes === 0) {
-            alert("Please enter your screen time.");
-            return;
-            }
-        
-            if (hours > 24) {
-            alert("Hours can't exceed 24.");
-            return;
-            }
-        
-            if (minutes > 59) {
-            alert("Minutes can't exceed 59.");
-            return;
-            }
-        
-            setScreenTime(`${hours}h ${minutes}m`);
-            setModalVisible(false);
-            setHoursInput("");
-            setMinutesInput("");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }}
-        
-        backgroundColor="#07A77F"
-        borderColor="#ffffff"
-        width={160}
-        height={55}
-        style={{
-            marginTop: 20,
-            opacity: hoursInput.trim() || minutesInput.trim() ? 1 : 0.5,
-          }}
-          disabled={!hoursInput.trim() && !minutesInput.trim()}
-          
-      >
-        <Text style={{ color: "#fff", fontWeight: "bold" }}>Update</Text>
-      </ShadowPillButton>
+    if (hours === 0 && minutes === 0) {
+      alert("Please enter your screen time.");
+      return;
+    }
+
+    if (hours > 24) {
+      alert("Hours can't exceed 24.");
+      return;
+    }
+
+    if (minutes > 59) {
+      alert("Minutes can't exceed 59.");
+      return;
+    }
+
+    setScreenTime(`${hours}h ${minutes}m`);
+    setModalVisible(false);
+    setHoursInput("");
+    setMinutesInput("");
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }}
+  disabled={!hoursInput.trim() && !minutesInput.trim()}
+  style={{
+    marginTop: 20,
+    opacity: hoursInput.trim() || minutesInput.trim() ? 1 : 0.5,
+  }}
+>
+  <Confirm  />
+</Pressable>
+
     </View>
   </View>
 </Modal>
