@@ -45,3 +45,33 @@ export function getSkillGroupForElo(elo: number): SkillGroup {
     }
     throw new Error(`No SkillGroup found for elo: ${elo}`);
 }
+
+export function getEloFromScreenTime(hours: number): number {
+    const allGroups = Object.values(SkillGroups);
+
+    // Sort groups by screenTimeRequirementHours in descending order
+    const sortedGroups = [...allGroups].sort((a, b) => b.screenTimeRequirementHours - a.screenTimeRequirementHours);
+
+    // Handle cases outside defined bounds
+    if (hours >= sortedGroups[0].screenTimeRequirementHours) {
+        return sortedGroups[0].minElo;
+    }
+    if (hours <= sortedGroups[sortedGroups.length - 1].screenTimeRequirementHours) {
+        return SkillGroups.Sage.minElo;
+    }
+
+    // Find the two groups between which the hours lie
+    for (let i = 0; i < sortedGroups.length - 1; i++) {
+        const upperGroup = sortedGroups[i];
+        const lowerGroup = sortedGroups[i + 1];
+    
+        if (hours <= upperGroup.screenTimeRequirementHours && hours >= lowerGroup.screenTimeRequirementHours) {
+            const rangeHours = upperGroup.screenTimeRequirementHours - lowerGroup.screenTimeRequirementHours;
+            const rangeElo = lowerGroup.minElo - upperGroup.minElo;
+            const hoursFromUpper = upperGroup.screenTimeRequirementHours - hours;
+            const t = hoursFromUpper / rangeHours;
+            return Math.round(upperGroup.minElo + t * rangeElo);
+        }
+    }    
+    throw new Error(`No Elo mapping found for screen time: ${hours}`);
+}
