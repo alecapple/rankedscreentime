@@ -68,7 +68,7 @@ export default function Index() {
 // Landing screen with logo and buttons
 const LandingScreen = ({ onLogin }: { onLogin: () => void }) => {
   return (
-    <View style={styles.content} screenOptions={{ headerShown: false }}>
+    <View style={styles.content}>
       <LoginLogo width={289} height={303} />
       <View style={styles.buttonGroup}>
         <ShadowPillButton
