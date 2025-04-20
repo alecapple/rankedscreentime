@@ -85,10 +85,10 @@ export default function Challenge() {
         </View>
 
         {/* Top-right screen time display */}
-        <View style={styles.screenTimeContainer}>
+        {/* <View style={styles.screenTimeContainer}>
           <Text style={styles.screenTimeValue}>{screenTime}</Text>
           <Text style={styles.screenTimeLabel}>YOUR SCREEN TIME TODAY</Text>
-        </View>
+        </View> */}
 
         {/* Leaderboard */}
         <View style={styles.leaderboardContainer}>

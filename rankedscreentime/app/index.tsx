@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
   buttonGroup: {
     marginTop: 100,
     alignItems: "center",
+    justifyContent: "center",
   },
   loginText: {
     fontWeight: "bold",

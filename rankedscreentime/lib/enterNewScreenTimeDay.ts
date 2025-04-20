@@ -28,6 +28,7 @@ export async function enterNewScreenTimeDay(userId: string, hours: number, date?
   if (newPlacementCount === 3) {
     const screenTimeMinutes: number[] = player.getScreenTimeData().map(entry => entry.minutes);
 
+    // commented by chris for demo purposes
     // if (screenTimeMinutes.length < 3) {
     //   throw new Error(`Expected 3 placement matches, got ${screenTimeMinutes.length}`);
     // }
