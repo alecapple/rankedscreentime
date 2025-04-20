@@ -3,7 +3,7 @@ import { Pressable, View, StyleSheet } from "react-native";
 import * as Haptics from "expo-haptics";
 
 import HomeIcon from "@/assets/tabs/HomePage_hometab.svg";
-import ChallengeIcon from "@/assets/tabs/HomePage_challengestab.svg";
+import ChallengeIcon from "@/assets/tabs/leaderboard.svg";
 
 export default function TabLayout() {
   return (
