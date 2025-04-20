@@ -47,9 +47,14 @@ export default function Index() {
             setPlayer(loadedPlayer);
 
             const playerElo = loadedPlayer.getElo();
+
             setRankLabel(getSkillGroupForElo(playerElo).name);
             setElo(playerElo);
             setStreak(loadedPlayer.getStreak());
+
+            if (loadedPlayer.getPlacementMatchesCompleted() < 3) {
+                setRankLabel("Unranked (" + (3 - loadedPlayer.getPlacementMatchesCompleted()) + " remaining)");
+            }
 
             // Manually get today's date
             const today = new Date();
@@ -235,6 +240,10 @@ export default function Index() {
                                     setElo(playerElo);
                                     setStreak(player.getStreak());
                                     setScreenTime(`${hours}h ${minutes}m`);
+
+                                    if (player.getPlacementMatchesCompleted() < 3) {
+                                        setRankLabel("Unranked (" + (3 - player.getPlacementMatchesCompleted()) + " remaining)");
+                                    }
 
                                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                                 } catch (error) {
