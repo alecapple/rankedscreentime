@@ -16,8 +16,8 @@ type ShadowPillButtonProps = {
   backgroundColor?: string;
   borderColor?: string;
   style?: StyleProp<ViewStyle>;
+  disabled? : boolean;
 };
-
 export default function ShadowPillButton({
   onPress,
   children,
@@ -26,12 +26,14 @@ export default function ShadowPillButton({
   backgroundColor = "#9CE8D5",
   borderColor = "#111824",
   style,
+  disabled = false, // ✅ default to false
 }: ShadowPillButtonProps) {
   const borderRadius = 995.677;
 
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled} // ✅ Pass to Pressable
       style={[
         {
           width,
@@ -43,11 +45,12 @@ export default function ShadowPillButton({
           shadowOpacity: 0.05,
           shadowRadius: 1.99,
           elevation: 4,
+          opacity: disabled ? 0.5 : 1, // ✅ visual cue
         },
         style,
       ]}
     >
-      {/* Glow Border Layer */}
+      {/* Glow Border */}
       <View
         style={{
           ...StyleSheet.absoluteFillObject,
@@ -59,7 +62,7 @@ export default function ShadowPillButton({
         }}
       />
 
-      {/* Core Button Layer */}
+      {/* Main Button */}
       <View
         style={{
           width,
