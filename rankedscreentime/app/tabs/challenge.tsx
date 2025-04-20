@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ImageBackground,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import WhiteLogo from "@/assets/logos/logoWhite.svg";
 import { auth, db } from "@/firebase/firebaseConfig";
@@ -18,6 +19,7 @@ export default function Challenge() {
   const [leaderboard, setLeaderboard] = useState<
     { rank: number; username: string; elo: number }[]
   >([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPlayerAndLeaderboard = async () => {
@@ -55,6 +57,7 @@ export default function Challenge() {
         });
 
         setLeaderboard(results);
+        setLoading(false);
       });
 
       return unsubscribe;
@@ -90,32 +93,39 @@ export default function Challenge() {
         {/* Leaderboard */}
         <View style={styles.leaderboardContainer}>
           <Text style={styles.leaderboardTitle}>LEADERBOARD</Text>
-          <View style={styles.leaderboardHeader}>
-            <Text style={[styles.headerCol, { flex: 1,textAlign:"center"}]}>RANK</Text>
-            <Text style={[styles.headerCol, { flex: 1, textAlign:"center"}]}>ELO</Text>
-            <Text style={[styles.headerCol, { flex: 2, textAlign: "right" }]}>
-              USER
-            </Text>
-          </View>
 
-          {leaderboard.map((entry) => (
-            <View key={entry.rank} style={styles.leaderboardRow}>
-              <Text style={[styles.leaderboardCell, { flex: 1,  textAlign: "center"}]}>
-                {entry.rank}
-              </Text>
-              <Text style={[styles.leaderboardCell, { flex: 1, textAlign: "center" }]}>
-                {entry.elo}
-              </Text>
-              <Text
-                style={[
-                  styles.leaderboardCell,
-                  { flex: 2, textAlign: "right" },
-                ]}
-              >
-                {entry.username}
-              </Text>
-            </View>
-          ))}
+          {loading ? (
+            <ActivityIndicator size="large" color="#ffffff" style={{ marginTop: 40 }} />
+          ) : (
+            <>
+              <View style={styles.leaderboardHeader}>
+                <Text style={[styles.headerCol, { flex: 1, textAlign: "center" }]}>RANK</Text>
+                <Text style={[styles.headerCol, { flex: 1, textAlign: "center" }]}>ELO</Text>
+                <Text style={[styles.headerCol, { flex: 2, textAlign: "right" }]}>
+                  USER
+                </Text>
+              </View>
+
+              {leaderboard.map((entry) => (
+                <View key={entry.rank} style={styles.leaderboardRow}>
+                  <Text style={[styles.leaderboardCell, { flex: 1, textAlign: "center" }]}>
+                    {entry.rank}
+                  </Text>
+                  <Text style={[styles.leaderboardCell, { flex: 1, textAlign: "center" }]}>
+                    {entry.elo}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.leaderboardCell,
+                      { flex: 2, textAlign: "right" },
+                    ]}
+                  >
+                    {entry.username}
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
         </View>
       </ScrollView>
     </ImageBackground>

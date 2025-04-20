@@ -15,7 +15,8 @@ export const createUserProfile = functions.auth.user().onCreate(async (user) => 
       elo: 0,
       streak: 0,
       placementMatchesCompleted: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      username: user.email?.split("@")[0] || "unknown",
     };
   
     try {

@@ -28,9 +28,9 @@ export async function enterNewScreenTimeDay(userId: string, hours: number, date?
   if (newPlacementCount === 3) {
     const screenTimeMinutes: number[] = player.getScreenTimeData().map(entry => entry.minutes);
 
-    if (screenTimeMinutes.length < 3) {
-      throw new Error(`Expected 3 placement matches, got ${screenTimeMinutes.length}`);
-    }
+    // if (screenTimeMinutes.length < 3) {
+    //   throw new Error(`Expected 3 placement matches, got ${screenTimeMinutes.length}`);
+    // }
 
     // Calculate starting Elo
     const eloValues = screenTimeMinutes

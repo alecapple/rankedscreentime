@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
@@ -9,24 +9,37 @@ import {
     TextInput,
     Modal,
     Pressable,
+    ActivityIndicator,
+    Animated
 } from "react-native";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebaseConfig";
-import ShadowPillButton from "@/assets/login/ShadowPillButton";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useEffect } from "react";
 import { Player } from "@/models/Player";
 import { enterNewScreenTimeDay } from "@/lib/enterNewScreenTimeDay";
+import { getSkillGroupForElo } from "@/models/SkillGroup";
 import "@/models/SkillGroup";
+import ZENITH_DOOMSCROLLER_1 from "@/assets/ranks/ZENITH_DOOMSCROLLER_1.svg";
+import ZENITH_DOOMSCROLLER_2 from "@/assets/ranks/ZENITH_DOOMSCROLLER_2.svg";
+import ZENITH_DOOMSCROLLER_3 from "@/assets/ranks/ZENITH_DOOMSCROLLER_3.svg";
 
+const rankImages: { [key: string]: React.FC<any> } = {
+    "Doom Scroller I": ZENITH_DOOMSCROLLER_1,
+    "Doom Scroller II": ZENITH_DOOMSCROLLER_2,
+    "Doom Scroller III": ZENITH_DOOMSCROLLER_3,
+  };
+
+const getRankImage = (rank: string) => {
+   return rankImages[rank] || rankImages["Doom Scroller II"];
+};
+    
 const backgroundImage = require("@/assets/images/HomeBg.png");
 import WhiteLogo from "@/assets/logos/logoWhiteFilled.svg";
-import Rank from "@/assets/ranks/ZENITH_DOOMSCROLLER_2.svg";
 const sparkleImage = require("@/assets/images/sparkle.png");
 import EnterScreentime from "@/assets/images/BUTTON_ENTERSCREENTIME.svg";
 import Confirm from "@/assets/images/confirm.svg";
-import { getSkillGroupForElo } from "@/models/SkillGroup";
+
 export default function Index() {
     const router = useRouter();
     const [screenTime, setScreenTime] = useState("---");
@@ -35,36 +48,39 @@ export default function Index() {
     const [minutesInput, setMinutesInput] = useState("");
     const [player, setPlayer] = useState<Player | null>(null);
     const [rankLabel, setRankLabel] = useState("");
+    const [rankImageKey, setRankImageKey] = useState("ZENITH_DOOMSCROLLER_2");    
     const [elo, setElo] = useState(0);
     const [streak, setStreak] = useState(0);
-
+    const [loading, setLoading] = useState(true);
+    const progressAnim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
-        const fetchPlayer = async () => {
-            const currentUser = auth.currentUser;
-            if (!currentUser) return;
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
 
-            const loadedPlayer = await Player.create(currentUser.uid);
-            setPlayer(loadedPlayer);
-
-            const playerElo = loadedPlayer.getElo();
-
-            setRankLabel(getSkillGroupForElo(playerElo).name);
+        const unsubscribe = Player.listenTo(currentUser.uid, async (updatedPlayer: Player) => {
+            setPlayer(updatedPlayer);
+            const playerElo = updatedPlayer.getElo();
             setElo(playerElo);
-            setStreak(loadedPlayer.getStreak());
+            setStreak(updatedPlayer.getStreak());
 
-            if (loadedPlayer.getPlacementMatchesCompleted() < 3) {
-                setRankLabel("Unranked (" + (3 - loadedPlayer.getPlacementMatchesCompleted()) + " remaining)");
+            if (updatedPlayer.getPlacementMatchesCompleted() < 3) {
+                const remaining = 3 - updatedPlayer.getPlacementMatchesCompleted();
+                setRankLabel(`Unranked (${remaining} remaining)`);
+                setRankImageKey("ZENITH_DOOMSCROLLER_2"); // fallback image
+            } else {
+                const skillGroup = getSkillGroupForElo(playerElo);
+                setRankLabel(skillGroup.name);
+                setRankImageKey(skillGroup.name);
             }
+            
 
-            // Manually get today's date
             const today = new Date();
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
             const todayStr = `${yyyy}-${mm}-${dd}`;
 
-            const todaysEntry = loadedPlayer.getScreenTimeData().find(entry => entry.day === todayStr);
-
+            const todaysEntry = updatedPlayer.getScreenTimeData().find(entry => entry.day === todayStr);
             if (todaysEntry) {
                 const hours = Math.floor(todaysEntry.minutes / 60);
                 const minutes = todaysEntry.minutes % 60;
@@ -72,11 +88,45 @@ export default function Index() {
             } else {
                 setScreenTime("Enter Time");
             }
-        };
 
-        fetchPlayer();
+            setLoading(false);
+        });
+
+        return () => unsubscribe?.();
     }, []);
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
+    const bounceRankImage = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 1.1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 0.95,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      };
+      
+    useEffect(() => {
+        const target = Math.min((elo % 100) / 100, 1);
+        Animated.timing(progressAnim, {
+          toValue: target,
+          duration: 800,
+          useNativeDriver: false,
+        }).start();
+      }, [elo]);
+            
     const handleSignOut = async () => {
         try {
             await signOut(auth);
@@ -86,45 +136,82 @@ export default function Index() {
         }
     };
 
+    if (loading) {
+        return (
+            <View style={[styles.background, { justifyContent: "center", alignItems: "center" }]}>
+                <ActivityIndicator size="large" color="#ffffff" />
+            </View>
+        );
+    }
+    const RankImage = getRankImage(rankImageKey); 
     return (
         <ImageBackground source={backgroundImage} resizeMode="cover" style={styles.background}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
-                {/* Top-left logo */}
                 <View style={styles.logoContainer}>
                     <WhiteLogo width={100} height={35} />
                 </View>
+                <View style={styles.signOutContainer}>
+                    <Pressable
+                        onPress={async () => {
+                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        handleSignOut();
+                        }}
+                        style={({ pressed }) => [
+                        styles.signOutButton,
+                        { opacity: pressed ? 0.8 : 1 },
+                        ]}
+                    >
+                        <Text style={styles.signOutText}>SIGN OUT</Text>
+                    </Pressable>
+                </View>
 
-                {/* Rank icon */}
                 <View style={styles.rankWrapper}>
-                    <Rank width={300} height={300} fill="#ffffff" />
+                    <Pressable onPress={bounceRankImage}>
+                        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                            <RankImage width={300} height={300} fill="#ffffff" /> 
+                        </Animated.View>
+                    </Pressable>
                     <Text style={styles.rankLabel}>{rankLabel}</Text>
 
-                    {/* Progress Bar */}
-                    <View style={styles.progressWrapper}>
+                    <Animated.View style={styles.progressWrapper}>
                         <View style={styles.progressBarBackground}>
-                            <View style={[styles.progressBarFill, { width: "65%" }]} />
+                            <Animated.View
+                            style={[
+                                styles.progressBarFill,
+                                {
+                                width: progressAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ["0%", "100%"],
+                                }),
+                                },
+                            ]}
+                            />
                         </View>
-
-                        {/* Sparkle icon */}
-                        <View style={[styles.sparkle, { left: "65%" }]}>
+                        <Animated.View
+                            style={[
+                            styles.sparkle,
+                            {
+                                left: progressAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ["0%", "100%"],
+                                }),
+                            },
+                            ]}
+                        >
                             <Image source={sparkleImage} />
-                        </View>
-                    </View>
+                        </Animated.View>
+                        </Animated.View>
 
                     <Text style={styles.progressText}>NEXT RANK: {100 - Math.floor(elo % 100)} ELO NEEDED</Text>
                 </View>
-
-                {/* Stats */}
+ 
                 <View style={styles.statsContainer}>
-                    {/* Left Column: Screen Time */}
                     <View style={styles.leftStats}>
                         <Text style={styles.screenTimeValue}>{screenTime}</Text>
                         <Text style={styles.screenTimeLabel}>SCREEN TIME TODAY</Text>
                     </View>
 
-                    {/* Right Column: Streak + ELO */}
                     <View style={styles.rightStats}>
-                        {/* Streak */}
                         <View style={styles.statRow}>
                             <Text style={styles.emoji}>🔥</Text>
                             <View style={styles.statTextBlock}>
@@ -133,7 +220,6 @@ export default function Index() {
                             </View>
                         </View>
 
-                        {/* ELO */}
                         <View style={styles.statRow}>
                             <Text style={styles.emoji}>✨</Text>
                             <View style={styles.statTextBlock}>
@@ -144,7 +230,6 @@ export default function Index() {
                     </View>
                 </View>
 
-                {/* Enter Screen Time Button */}
                 <Pressable
                     onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -153,21 +238,8 @@ export default function Index() {
                 >
                     <EnterScreentime />
                 </Pressable>
-
-                {/* Optional: Sign Out Button */}
-                {/* <ShadowPillButton
-              onPress={handleSignOut}
-              backgroundColor="#35466f"
-              borderColor="#9ce8d5"
-              width={200}
-              height={50}
-              style={{ marginTop: 40 }}
-            >
-              <Text style={styles.signOutText}>SIGN OUT</Text>
-            </ShadowPillButton> */}
             </ScrollView>
 
-            {/* Modal for Updating Screen Time */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -204,25 +276,20 @@ export default function Index() {
                                     alert("Please enter your screen time.");
                                     return;
                                 }
-
                                 if (hours > 24) {
                                     alert("Hours can't exceed 24.");
                                     return;
                                 }
-
                                 if (minutes > 59) {
                                     alert("Minutes can't exceed 59.");
                                     return;
                                 }
-
                                 if (!player) {
                                     alert("Player not loaded.");
                                     return;
                                 }
 
                                 try {
-
-                                    // Close modal and reset
                                     setModalVisible(false);
                                     setHoursInput("");
                                     setMinutesInput("");
@@ -231,27 +298,13 @@ export default function Index() {
                                     if (!currentUser) return;
 
                                     await enterNewScreenTimeDay(currentUser.uid, (hours * 60 + minutes) / 60);
-
                                     await player.refresh();
-
-                                    // Refresh UI
-                                    const playerElo = player.getElo();
-                                    setRankLabel(getSkillGroupForElo(playerElo).name);
-                                    setElo(playerElo);
-                                    setStreak(player.getStreak());
-                                    setScreenTime(`${hours}h ${minutes}m`);
-
-                                    if (player.getPlacementMatchesCompleted() < 3) {
-                                        setRankLabel("Unranked (" + (3 - player.getPlacementMatchesCompleted()) + " remaining)");
-                                    }
-
                                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                                 } catch (error) {
                                     console.error("Error entering new screen time:", error);
                                     alert("Failed to submit screen time.");
                                 }
                             }}
-
                             disabled={!hoursInput.trim() && !minutesInput.trim()}
                             style={{
                                 marginTop: 20,
@@ -260,11 +313,9 @@ export default function Index() {
                         >
                             <Confirm />
                         </Pressable>
-
                     </View>
                 </View>
             </Modal>
-
         </ImageBackground>
     );
 }
@@ -312,7 +363,7 @@ const styles = StyleSheet.create({
     sparkle: {
         position: "absolute",
         bottom: -12,
-        transform: [{ translateX: -20 }],
+        transform: [{ translateX: -15 }],
     },
     progressText: {
         color: "#cbd5e1",
@@ -400,11 +451,35 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#fff",
     },
-    signOutText: {
-        fontWeight: "bold",
-        fontSize: 16,
+    signOutContainer: {
+        position: "absolute",
+        top: 83,
+        right: 25,
+        zIndex: 10,
+      },
+      
+      signOutButton: {
+        backgroundColor: "#1e293b",
+        borderColor: "#9ce8d5",
+        borderWidth: 1,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+      },
+      
+      signOutText: {
         color: "#ffffff",
-    },
+        fontWeight: "bold",
+        fontSize: 14,
+        letterSpacing: 1,
+      },
+      
+      
     inputRow: {
         flexDirection: "row",
         width: "100%",

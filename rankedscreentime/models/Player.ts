@@ -1,5 +1,5 @@
 import { db } from "@/firebase/firebaseConfig";
-import { doc, getDoc, updateDoc, collection, getDocs, setDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, getDocs, setDoc, onSnapshot } from "firebase/firestore";
 
 interface ScreenTime {
   day: string; // format "YYYY-MM-DD"
@@ -21,6 +21,13 @@ export class Player {
     const player = new Player(uid);
     await player.initialize();
     return player;
+  }
+  static listenTo(uid: string, onChange: (player: Player) => void) {
+    const userRef = doc(db, "users", uid);
+    return onSnapshot(userRef, async () => {
+      const updatedPlayer = await Player.create(uid);
+      onChange(updatedPlayer);
+    });
   }
 
   private async initialize() {
