@@ -1,77 +1,128 @@
-import React, { useEffect } from "react";
-import { View, Button, Text, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import React, { useState, useEffect } from "react";
+import { View, Button, Text, TextInput, StyleSheet, Alert } from "react-native";
+import { useRouter, useRootNavigationState } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase/firebaseConfig";
 import { useAuth } from "@/firebase/context/AuthContext";
 
-// Handles redirect after auth session
-WebBrowser.maybeCompleteAuthSession();
+export default function SignIn() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-export default function LoginScreen() {
-  const router = useRouter();
-  const { user } = useAuth();
+    const { user } = useAuth();
+    const router = useRouter();
+    const rootNavigationState = useRootNavigationState();
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: "1022454839735-icuh3dfc9s5rg2ejcln6a70ip3f1thm0.apps.googleusercontent.com",
-    iosClientId: "1022454839735-9dtoo1irt4p86lovsmods30gp625m0lq.apps.googleusercontent.com",
-    redirectUri: "https://auth.expo.io/@sixtychris/zenith",
-});
-  
-  // Redirect if already signed in
-  useEffect(() => {
-    if (user) {
-      router.replace("/");
-    }
-  }, [user]);
+    // Redirect if user is already authenticated
+    useEffect(() => {
+        if (!rootNavigationState?.key) return;
 
-// Firebase login with Google ID token
-useEffect(() => {
-  if (response?.type === "success") {
-    console.log("✅ Google sign-in response received:", response);
+        if (user) {
+            router.replace("/home");
+        }
+    }, [user, rootNavigationState]);
 
-    const { idToken } = response.authentication!;
-    console.log("🔑 Extracted ID Token:", idToken);
+    const handleSignIn = async () => {
+        if (!email || !password) {
+            Alert.alert("Error", "Please enter both email and password");
+            return;
+        }
 
-    const credential = GoogleAuthProvider.credential(idToken);
+        try {
+            setIsLoading(true);
+            await signInWithEmailAndPassword(auth, email, password);
+            // No need to navigate here as the useEffect will handle redirection
+            // once the user state is updated by AuthContext
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to sign in";
+            Alert.alert("Authentication Error", errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    signInWithCredential(auth, credential)
-      .then((userCredential) => {
-        console.log("✅ Firebase sign-in successful!");
-        console.log("👤 Firebase User:", userCredential.user);
-      })
-      .catch((error) => {
-        console.error("❌ Firebase sign-in failed:", error);
-      });
-  } else if (response?.type === "error") {
-    console.error("❌ Google sign-in error:", response.error);
-  }
-}, [response]);
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Sign In</Text>
 
+            <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                testID="email-input"
+            />
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Zenith</Text>
-      <Button
-        title="Sign in with Google"
-        disabled={!request}
-        onPress={() => promptAsync()}
-      />
-    </View>
-  );
+            <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                testID="password-input"
+            />
+
+            <View style={styles.buttonContainer}>
+                <Button
+                    title={isLoading ? "Signing in..." : "Sign In"}
+                    onPress={handleSignIn}
+                    disabled={isLoading}
+                    testID="sign-in-button"
+                />
+            </View>
+
+            <View style={styles.linkContainer}>
+                <Text
+                    style={styles.link}
+                    onPress={() => router.push("/sign-up")}
+                >
+                    Don't have an account? Sign Up
+                </Text>
+
+                <Text
+                    style={styles.link}
+                    onPress={() => router.push("/forgot-password")}
+                >
+                    Forgot Password?
+                </Text>
+            </View>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-  },
+    container: {
+        flex: 1,
+        justifyContent: "center",
+        padding: 20,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 30,
+        textAlign: "center",
+    },
+    input: {
+        height: 50,
+        borderWidth: 1,
+        borderColor: "#ddd",
+        borderRadius: 8,
+        marginBottom: 15,
+        paddingHorizontal: 15,
+        backgroundColor: "#fff",
+    },
+    buttonContainer: {
+        marginVertical: 10,
+    },
+    linkContainer: {
+        marginTop: 20,
+        alignItems: "center",
+    },
+    link: {
+        color: "#0066cc",
+        marginVertical: 5,
+    }
 });
